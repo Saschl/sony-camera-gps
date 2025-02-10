@@ -1,69 +1,51 @@
-/*
- * Copyright 2023 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.saschl.sonygps.service
 
-import android.Manifest
 import android.annotation.SuppressLint
-import android.app.NotificationManager
+import android.app.Service
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothProfile
-import android.companion.AssociationInfo
-import android.companion.CompanionDeviceService
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.location.Location
+import android.os.Binder
 import android.os.Build
+import android.os.IBinder
+import android.os.Looper
 import android.util.Log
-import androidx.annotation.RequiresPermission
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationChannelCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
+import androidx.annotation.RequiresApi
+import androidx.core.app.ServiceCompat
 import androidx.core.content.getSystemService
-import androidx.core.graphics.drawable.IconCompat
-import com.google.android.gms.tasks.CancellationTokenSource
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.saschl.sonygps.notification.NotificationsHelper
+import com.saschl.sonygps.service.CompanionDeviceSampleService.DeviceNotificationManager
 import kotlinx.coroutines.flow.MutableStateFlow
-import timber.log.Timber
-import java.util.Locale
 import java.util.TimeZone
+import java.util.Timer
+import java.util.TimerTask
 import java.util.UUID
 
+class LocationSenderService : Service() {
 
-class CompanionDeviceSampleService : CompanionDeviceService() {
+    private var startId: Int = 0
+    private val binder = LocalBinder()
 
-    // private lateinit var mHandler: Handler
-    /*  private lateinit var fusedLocationClient: FusedLocationProviderClient
-      private lateinit var locationCallback: LocationCallback*/
-    // private var gatt1: BluetoothGatt? = null
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var locationCallback: LocationCallback
+    private var gatt1: BluetoothGatt? = null
 
     private var characteristic: BluetoothGattCharacteristic? = null
 
     private var locationResultVar: Location = Location("")
 
-    //private val coroutineScope = CoroutineScope(Job())
-    // private lateinit var timerJob: Timer
-
-    private var cancellationToken = CancellationTokenSource()
-
+    private var shutdownTimer = Timer()
 
     companion object {
 
@@ -73,12 +55,6 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         // Same as the service but for the characteristic
         val CHARACTERISTIC_UUID: UUID = UUID.fromString("0000dd11-0000-1000-8000-00805f9b34fb")
 
-        const val PREFS_NAME = "GattPrefs"
-        const val KEY_DEVICE_ADDRESS = "device_address"
-
-
-        const val ACTION_START_ADVERTISING = "start_ad"
-        const val ACTION_STOP_ADVERTISING = "stop_ad"
 
         // Important: this is just for simplicity, there are better ways to communicate between
         // a service and an activity/view
@@ -88,13 +64,21 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         private const val CHANNEL = "gatt_server_channel"
     }
 
-
     private val notificationManager: DeviceNotificationManager by lazy {
         DeviceNotificationManager(applicationContext)
     }
 
     private val bluetoothManager: BluetoothManager by lazy {
         applicationContext.getSystemService()!!
+    }
+
+
+    inner class LocalBinder : Binder() {
+        fun getService(): LocationSenderService = this@LocationSenderService
+    }
+
+    override fun onBind(intent: Intent?): IBinder {
+        return binder
     }
 
     private val callback = object : BluetoothGattCallback() {
@@ -117,7 +101,22 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
                 // https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createBond()
 
                 Log.e("BLEConnectEffect", "An error happened: $status")
+                fusedLocationClient.removeLocationUpdates(locationCallback)
+                shutdownTimer = Timer()
+                shutdownTimer.schedule(object : TimerTask() {
+                    override fun run() {
+
+                        Log.e("LocationSenderService", "Disconnecting and closing")
+                        gatt.disconnect()
+                        gatt.close()
+                        stopSelf(startId)
+                    }
+
+                }, 120000)
             } else {
+                shutdownTimer.cancel()
+                shutdownTimer.purge()
+
                 Log.i("BLEConnectEffect", "Connected to device")
                 gatt.discoverServices()
 
@@ -132,6 +131,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
             //    currentOnStateChange(state)
         }
 
+        @SuppressLint("NewApi", "MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             super.onServicesDiscovered(gatt, status)
             //      state = state.copy(services = gatt.services)
@@ -140,8 +140,18 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
             // If the GATTServerSample service is found, get the characteristic
             characteristic = service?.getCharacteristic(CHARACTERISTIC_UUID)
+            fusedLocationClient.lastLocation.addOnSuccessListener {
+                locationResultVar = it
+                sendData(gatt, characteristic)
+            }
+            fusedLocationClient.requestLocationUpdates(
+                LocationRequest.Builder(
+                    Priority.PRIORITY_HIGH_ACCURACY,
+                    5000,
 
-            sendData(gatt, characteristic)
+                    ).build(), locationCallback, Looper.getMainLooper()
+            )
+
 
         }
 
@@ -183,145 +193,107 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         }
     }
 
-    @SuppressLint("MissingPermission")
-    override fun onDeviceAppeared(associationInfo: AssociationInfo) {
-        super.onDeviceAppeared(associationInfo)
-        if (missingPermissions()) {
-            Log.e(CompanionDeviceSampleService::class.java.toString(), "aaa");
-            return
-        }
-
-        val address = associationInfo.deviceMacAddress?.toString() ?: return
-      /*  var device: BluetoothDevice? = null
-        if (Build.VERSION.SDK_INT >= 34) {
-            device = associationInfo.associatedDevice?.bleDevice?.device
-        }
-        if (device == null) {
-            device = bluetoothManager.adapter.getRemoteDevice(address)
-        }*/
-
-        val serviceIntent = Intent(this, LocationSenderService::class.java)
-        serviceIntent.putExtra("address", address.uppercase(Locale.getDefault()))
-        startForegroundService(serviceIntent)
-
-    }
 
     @SuppressLint("MissingPermission")
-    override fun onDeviceDisappeared(associationInfo: AssociationInfo) {
-        super.onDeviceDisappeared(associationInfo)
-        if (missingPermissions()) {
-            return
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        this.startId = startId;
+        startAsForegroundService()
+
+        val address = intent?.getStringExtra("address")
+        var device: BluetoothDevice? = null
+
+        // if(address == null)
+
+        /* if(gatt1?.)*/
+
+        /*   bluetoothManager.getConnectedDevices(BluetoothGatt.GATT).forEach {
+               if (it.address == address) {
+                   device = it
+               }
+           }*/
+
+        device = bluetoothManager.adapter.getRemoteDevice(address)
+
+
+        if (gatt1 != null) {
+            Log.i("ayup", "Gatt will be reused")
+            //     gatt1?.connect()
+        } else {
+            Log.i("ayup", "Gatt will be created")
+
+            gatt1 = device?.connectGatt(this, true, callback)
         }
-
-        /* Timer().schedule(object : TimerTask() {
-             override fun run() {
-
-
-                 mHandler.post {
-                     Toast.makeText(applicationContext, "byebye", Toast.LENGTH_SHORT).show()
-                 }
-                 gatt?.disconnect()
-
-             }
-
-         }, 120000)
-
-
-         stopSelf()*/
-
-        /* notificationManager.onDeviceDisappeared(
-             address = associationInfo.deviceMacAddress?.toString() ?: return,
-         )*/
+        return START_REDELIVER_INTENT
     }
-
-
 
     @SuppressLint("MissingPermission")
     override fun onDestroy() {
+        gatt1?.disconnect()
+        gatt1?.close()
+        fusedLocationClient.removeLocationUpdates(locationCallback)
         super.onDestroy()
-
-        //   fusedLocationClient.removeLocationUpdates(locationCallback)
-        // timerJob.cancel()
-
-        //fusedLocationClient.removeLocationUpdates(locationCallback)
-
-        notificationManager.onDeviceDisappeared("Service gone :)")
-
-        /*   gatt?.disconnect()
-           gatt?.close()*/
-        Log.e("service", "Destroyed service")
     }
-
-    /*  override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-          super.onStartCommand(intent, flags, startId)
-
-          return START_STICKY
-      }*/
 
     @SuppressLint("MissingPermission")
     override fun onCreate() {
         super.onCreate()
+        /* if (missingPermissions()) {
+             Log.e(CompanionDeviceSampleService::class.java.toString(),"aaa");
+             return
+         }*/
 
-        Timber.plant(
-            Timber.DebugTree(),
-            FileTree()
-        )
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(fetchedLocation: LocationResult) {
+                //Log.i("ayup", "Location result received " + fetchedLocation.lastLocation.toString())
+
+                // any location is better than none for now
+                val lastLocation = fetchedLocation.lastLocation
+                if (locationResultVar.provider.equals("") && lastLocation != null) {
+                    locationResultVar = lastLocation
+                    return
+                }
+
+                if (lastLocation != null) {
+                    // new location is way less accurate, only take if the old location is very old
+                    if ((lastLocation.accuracy - locationResultVar.accuracy) > 200) {
+                        Log.w(
+                            "LOCATION",
+                            "New location is way less accurate than the old one, will only update if the last location is older than 5 minutes"
+                        )
+                        if (lastLocation.time - locationResultVar.time > 1000 * 60 * 5) {
+                            Log.d(
+                                "LOCATION",
+                                "Last accurate location is older than 5 minutes, updating anyway"
+                            )
+                            locationResultVar = lastLocation
+                        }
+                    } else {
+                        Log.w(
+                            "LOCATION",
+                            "New location is more accurate than the old one, updating"
+                        )
+                        locationResultVar = lastLocation
+                    }
+
+                }
+                sendData(gatt1, characteristic)
+            }
+        }
     }
 
-    /**
-     * Check BLUETOOTH_CONNECT is granted and POST_NOTIFICATIONS is granted for devices running
-     * Android 13 and above.
-     */
-    private fun missingPermissions(): Boolean = ActivityCompat.checkSelfPermission(
-        this,
-        Manifest.permission.BLUETOOTH_CONNECT,
-    ) != PackageManager.PERMISSION_GRANTED ||
-            ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.POST_NOTIFICATIONS,
-            ) != PackageManager.PERMISSION_GRANTED
+    private fun startAsForegroundService() {
+        // create the notification channel
+        NotificationsHelper.createNotificationChannel(this)
 
-    /**
-     * Utility class to post notification when CDM notifies that a device appears or disappears
-     */
-    class DeviceNotificationManager(context: Context) {
-
-        companion object {
-            private const val CDM_CHANNEL = "cdm_channel"
-        }
-
-        private val manager = NotificationManagerCompat.from(context)
-
-        private val notificationBuilder = NotificationCompat.Builder(context, CDM_CHANNEL)
-            .setSmallIcon(IconCompat.createWithResource(context, context.applicationInfo.icon))
-            .setContentTitle("Companion Device Manager Sample")
-
-        init {
-            createNotificationChannel()
-        }
-
-        @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-        fun onDeviceAppeared(address: String, status: String) {
-            val notification =
-                notificationBuilder.setContentText("Device: $address appeared.\nStatus: $status")
-            manager.notify(address.hashCode(), notification.build())
-        }
-
-        @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-        fun onDeviceDisappeared(address: String) {
-            val notification = notificationBuilder.setContentText("Device: $address disappeared")
-            manager.notify(address.hashCode(), notification.build())
-        }
-
-        private fun createNotificationChannel() {
-            val channel =
-                NotificationChannelCompat.Builder(CDM_CHANNEL, NotificationManager.IMPORTANCE_HIGH)
-                    .setName("CDM Sample")
-                    .setDescription("Channel for the CDM sample")
-                    .build()
-            manager.createNotificationChannel(channel)
-        }
+        // promote service to foreground service
+        ServiceCompat.startForeground(
+            this,
+            1,
+            NotificationsHelper.buildNotification(this),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION.or(ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        )
     }
 
     @SuppressLint("MissingPermission")
@@ -356,6 +328,9 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         val locationData = set_location(latitude, longitude)
         System.arraycopy(locationData, 0, data, 11, locationData.size)
 
+        // get the timezone based on the position
+        // only use for the offset (currently unused as camera does the thing correctly)
+        val timezone = TimeZone.getDefault()
 
         // here UTC time must be used
         val dateData = set_date(TimeZone.getTimeZone("UTC").toZoneId())
@@ -380,17 +355,13 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         val hex = data.toHex()
         Log.i("ayup", "Sending data: $hex with location $locationResultVar")
 
-        if (characteristic != null) {
-            val result = gatt?.writeCharacteristic(
-                characteristic,
-                data,
-                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
-            )
-            Log.i("ayup", "Write result: $result")
-        }
+            if (characteristic != null) {
+                val result = gatt?.writeCharacteristic(
+                    characteristic,
+                    data,
+                    BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
+                )
+                Log.i("ayup", "Write result: $result")
+            }
     }
 }
-
-
-fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
-

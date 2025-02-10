@@ -16,7 +16,8 @@ internal object NotificationsHelper {
     private const val NOTIFICATION_CHANNEL_ID = "general_notification_channel"
 
     fun createNotificationChannel(context: Context) {
-        val notificationManager = context.getSystemService(Service.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+            context.getSystemService(Service.NOTIFICATION_SERVICE) as NotificationManager
 
         // create the notification channel
         val channel = NotificationChannel(
@@ -34,7 +35,12 @@ internal object NotificationsHelper {
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(Intent(context, MainActivity::class.java).let { notificationIntent ->
-                PendingIntent.getActivity(context, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    notificationIntent,
+                    PendingIntent.FLAG_IMMUTABLE
+                )
             })
             .build()
     }

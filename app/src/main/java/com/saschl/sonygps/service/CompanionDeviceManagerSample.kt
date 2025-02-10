@@ -20,14 +20,12 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothDevice.TRANSPORT_AUTO
-import android.bluetooth.BluetoothDevice.TRANSPORT_LE
 import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
-import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.companion.AssociationInfo
 import android.companion.AssociationRequest
@@ -35,8 +33,8 @@ import android.companion.BluetoothLeDeviceFilter
 import android.companion.CompanionDeviceManager
 import android.content.Intent
 import android.content.IntentSender
+import android.content.pm.PackageManager
 import android.os.Build
-import android.os.ParcelUuid
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -73,13 +71,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat.startForegroundService
+import androidx.core.app.ActivityCompat
 import androidx.core.content.getSystemService
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.saschl.sonygps.service.CompanionDeviceSampleService.Companion.CHARACTERISTIC_UUID
 import com.saschl.sonygps.service.CompanionDeviceSampleService.Companion.SERVICE_UUID
 import com.saschl.sonygps.ui.PermissionBox
@@ -87,13 +85,13 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.nio.ByteBuffer
-import java.util.Calendar
-import java.util.TimeZone
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.concurrent.Executor
 import java.util.regex.Pattern
 import kotlin.random.Random
 
-//@SuppressLint("InlinedApi", "MissingPermission")
 @Composable
 fun CompanionDeviceManagerSample() {
     val context = LocalContext.current
@@ -106,11 +104,24 @@ fun CompanionDeviceManagerSample() {
         Text(text = "No Companion device manager found. The device does not support it.")
     } else {
         if (selectedDevice == null) {
-            DevicesScreen(deviceManager) { device ->
-                selectedDevice = (device.device ?: adapter.getRemoteDevice(device.address))
+            PermissionBox(
+                permissions = listOf(
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            ) {
+
+                DevicesScreen(deviceManager) { device ->
+                    selectedDevice = (device.device ?: adapter.getRemoteDevice(device.address))
+                }
             }
         } else {
-            PermissionBox(permission = Manifest.permission.BLUETOOTH_CONNECT) {
+            PermissionBox(
+                permissions = listOf(
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            ) {
                 ConnectDeviceScreen(device = selectedDevice!!) {
                     selectedDevice = null
                 }
@@ -265,7 +276,6 @@ internal fun Int.toConnectionStateString() = when (this) {
 }
 
 
-@SuppressLint("InlinedApi")
 @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
 @Composable
 fun ConnectDeviceScreen(device: BluetoothDevice, onClose: () -> Unit) {
@@ -308,7 +318,7 @@ fun ConnectDeviceScreen(device: BluetoothDevice, onClose: () -> Unit) {
             onClick = {
                 scope.launch(Dispatchers.IO) {
                     if (state?.connectionState == BluetoothProfile.STATE_DISCONNECTED) {
-                  //      state?.gatt?.connect()
+                        //      state?.gatt?.connect()
                     }
                     // Example on how to request specific MTUs
                     // Note that from Android 14 onwards the system will define a default MTU and
@@ -333,9 +343,9 @@ fun ConnectDeviceScreen(device: BluetoothDevice, onClose: () -> Unit) {
         Button(
             enabled = state?.gatt != null && characteristic != null,
             onClick = {
-               /* scope.launch(Dispatchers.IO) {
-                    sendData(state?.gatt!!, characteristic!!)
-                }*/
+                /* scope.launch(Dispatchers.IO) {
+                     sendData(state?.gatt!!, characteristic!!)
+                 }*/
             },
         ) {
             Text(text = "Write to server")
@@ -364,20 +374,20 @@ fun set_location(latitude: Double, longitude: Double): ByteArray {
     return myLatByte + myLngByte
 }
 
-fun set_date(tz: TimeZone): ByteArray {
-    val calendar = Calendar.getInstance(tz)
-    val year = calendar.get(Calendar.YEAR).toShort()
+fun set_date(zoneId: ZoneId): ByteArray {
+    val now = ZonedDateTime.ofInstant(Instant.now(), zoneId)
+    val year = now.year.toShort()
     val yearBytes = ByteBuffer.allocate(2).putShort(year).array()
+    val hour = now.hour
     return byteArrayOf(
         yearBytes[0], yearBytes[1],
-        calendar.get(Calendar.MONTH).toByte(),
-        calendar.get(Calendar.DAY_OF_MONTH).toByte(),
-        calendar.get(Calendar.HOUR_OF_DAY).toByte(),
-        calendar.get(Calendar.MINUTE).toByte(),
-        calendar.get(Calendar.SECOND).toByte()
+        now.monthValue.toByte(),
+        now.dayOfMonth.toByte(),
+        now.hour.toByte(),
+        now.minute.toByte(),
+        now.second.toByte()
     )
 }
-
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -392,13 +402,12 @@ private fun DevicesScreen(
         mutableStateOf(deviceManager.getAssociatedDevices())
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        LaunchedEffect(associatedDevices) {
-            associatedDevices.forEach {
+/*    LaunchedEffect(associatedDevices) {
+        associatedDevices.forEach {
             //    deviceManager.startObservingDevicePresence(it.address)
-            }
         }
-    }
+
+    }*/
 
     Column(modifier = Modifier.fillMaxSize()) {
         ScanForDevicesMenu(deviceManager) {
@@ -409,15 +418,10 @@ private fun DevicesScreen(
             onConnect = onConnect,
             onDisassociate = {
                 scope.launch {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        deviceManager.disassociate(it.id)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        deviceManager.disassociate(it.address)
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        deviceManager.stopObservingDevicePresence(it.address)
-                    }
+                    deviceManager.disassociate(it.id)
+
+                    deviceManager.stopObservingDevicePresence(it.address)
+
                     associatedDevices = deviceManager.getAssociatedDevices()
                 }
             },
@@ -425,7 +429,6 @@ private fun DevicesScreen(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun ScanForDevicesMenu(
     deviceManager: CompanionDeviceManager,
@@ -550,7 +553,7 @@ private fun AssociatedDevicesList(
                     OutlinedButton(
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { onDisassociate(device) },
-                        border = ButtonDefaults.outlinedButtonBorder.copy(
+                        border = ButtonDefaults.outlinedButtonBorder().copy(
                             brush = SolidColor(MaterialTheme.colorScheme.error),
                         ),
                     ) {
@@ -563,29 +566,12 @@ private fun AssociatedDevicesList(
 }
 
 private fun Intent.getAssociationResult(): AssociatedDeviceCompat? {
-    var result: AssociatedDeviceCompat? = null
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        result = getParcelableExtra(
+
+        return getParcelableExtra(
             CompanionDeviceManager.EXTRA_ASSOCIATION,
             AssociationInfo::class.java,
         )?.toAssociatedDevice()
-    } else {
-        // Below Android 33 the result returns either a BLE ScanResult, a
-        // Classic BluetoothDevice or a Wifi ScanResult
-        // In our case we are looking for our BLE GATT server so we can cast directly
-        // to the BLE ScanResult
-        @Suppress("DEPRECATION")
-        val scanResult = getParcelableExtra<ScanResult>(CompanionDeviceManager.EXTRA_DEVICE)
-        if (scanResult != null) {
-            result = AssociatedDeviceCompat(
-                id = scanResult.advertisingSid,
-                address = scanResult.device.address ?: "N/A",
-                name = scanResult.scanRecord?.deviceName ?: "N/A",
-                device = scanResult.device,
-            )
-        }
-    }
-    return result
+
 }
 
 private suspend fun requestDeviceAssociation(deviceManager: CompanionDeviceManager): IntentSender {
@@ -626,11 +612,8 @@ private suspend fun requestDeviceAssociation(deviceManager: CompanionDeviceManag
             result.completeExceptionally(IllegalStateException(errorMessage?.toString().orEmpty()))
         }
     }
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val executor = Executor { it.run() }
         deviceManager.associate(pairingRequest, executor, callback)
-    } else {
-        deviceManager.associate(pairingRequest, callback, null)
-    }
+
     return result.await()
 }

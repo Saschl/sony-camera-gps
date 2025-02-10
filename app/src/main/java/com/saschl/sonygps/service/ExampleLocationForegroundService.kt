@@ -7,13 +7,11 @@ import android.location.Location
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.core.app.ServiceCompat
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.saschl.sonygps.notification.NotificationsHelper
@@ -58,7 +56,7 @@ class ExampleLocationForegroundService : Service() {
         Log.d(TAG, "onStartCommand")
 
         startAsForegroundService()
-       // startLocationUpdates()
+        // startLocationUpdates()
 
         return super.onStartCommand(intent, flags, startId)
     }
@@ -132,13 +130,13 @@ class ExampleLocationForegroundService : Service() {
     /**
      * Starts the location updates using the FusedLocationProviderClient.
      */
-/*    private fun startLocationU                                                                                                                                                                                                                                                                                                                                                                                                              pdates() {
-        fusedLocationClient.requestLocationUpdates(
-            LocationRequest.Builder(
-                LOCATION_UPDATES_INTERVAL_MS
-            ).build(), locationCallback, Looper.getMainLooper()
-        )
-    }*/
+    /*    private fun startLocationU                                                                                                                                                                                                                                                                                                                                                                                                              pdates() {
+            fusedLocationClient.requestLocationUpdates(
+                LocationRequest.Builder(
+                    LOCATION_UPDATES_INTERVAL_MS
+                ).build(), locationCallback, Looper.getMainLooper()
+            )
+        }*/
 
     /**
      * Starts a ticker that shows a toast every [TICKER_PERIOD_SECONDS] seconds to indicate that the service is still running.
