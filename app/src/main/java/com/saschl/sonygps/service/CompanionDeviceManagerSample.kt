@@ -57,6 +57,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -409,23 +410,36 @@ private fun DevicesScreen(
 
     }*/
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        ScanForDevicesMenu(deviceManager) {
-            associatedDevices = associatedDevices + it
+    Scaffold(
+        topBar = {
+            Text(
+                text = "Sony Camera GPS",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(32.dp),
+            )
+        }) { innerPadding ->
+
+        Column(modifier = Modifier
+            .padding(innerPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            ScanForDevicesMenu(deviceManager) {
+                associatedDevices = associatedDevices + it
+            }
+            AssociatedDevicesList(
+                associatedDevices = associatedDevices,
+                onConnect = onConnect,
+                onDisassociate = {
+                    scope.launch {
+                        deviceManager.disassociate(it.id)
+
+                        deviceManager.stopObservingDevicePresence(it.address)
+
+                        associatedDevices = deviceManager.getAssociatedDevices()
+                    }
+                },
+            )
         }
-        AssociatedDevicesList(
-            associatedDevices = associatedDevices,
-            onConnect = onConnect,
-            onDisassociate = {
-                scope.launch {
-                    deviceManager.disassociate(it.id)
-
-                    deviceManager.stopObservingDevicePresence(it.address)
-
-                    associatedDevices = deviceManager.getAssociatedDevices()
-                }
-            },
-        )
     }
 }
 
@@ -601,9 +615,10 @@ private suspend fun requestDeviceAssociation(deviceManager: CompanionDeviceManag
         }
 
         override fun onAssociationCreated(associationInfo: AssociationInfo) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                deviceManager.startObservingDevicePresence(associationInfo.associatedDevice!!.bleDevice!!.device!!.address)
-            }
+            //associationInfo.id
+
+            deviceManager.startObservingDevicePresence(associationInfo.associatedDevice!!.bleDevice!!.device!!.address)
+
             // This callback was added in API 33 but the result is also send in the activity result.
             // For handling backwards compatibility we can just have all the logic there instead
         }

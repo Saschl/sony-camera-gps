@@ -93,7 +93,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         DeviceNotificationManager(applicationContext)
     }
 
-    private val bluetoothManager: BluetoothManager by lazy {
+    /*    private val bluetoothManager: BluetoothManager by lazy {
         applicationContext.getSystemService()!!
     }
 
@@ -181,7 +181,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
             //     state = state.copy(messageReceived = value.decodeToString())
             //      currentOnStateChange(state)
         }
-    }
+    }*/
 
     @SuppressLint("MissingPermission")
     override fun onDeviceAppeared(associationInfo: AssociationInfo) {
@@ -191,8 +191,11 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
             return
         }
 
+        notificationManager.onDeviceAppeared("nah", "HERE I AM")
+
+
         val address = associationInfo.deviceMacAddress?.toString() ?: return
-      /*  var device: BluetoothDevice? = null
+        /*  var device: BluetoothDevice? = null
         if (Build.VERSION.SDK_INT >= 34) {
             device = associationInfo.associatedDevice?.bleDevice?.device
         }
@@ -202,6 +205,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
         val serviceIntent = Intent(this, LocationSenderService::class.java)
         serviceIntent.putExtra("address", address.uppercase(Locale.getDefault()))
+        Log.i("cdm","WILL STRART THE FOREGROUND BITCH")
         startForegroundService(serviceIntent)
 
     }
@@ -212,6 +216,9 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         if (missingPermissions()) {
             return
         }
+
+
+
 
         /* Timer().schedule(object : TimerTask() {
              override fun run() {
@@ -235,7 +242,6 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
     }
 
 
-
     @SuppressLint("MissingPermission")
     override fun onDestroy() {
         super.onDestroy()
@@ -245,6 +251,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
         //fusedLocationClient.removeLocationUpdates(locationCallback)
 
+        stopService(Intent(this, LocationSenderService::class.java))
         notificationManager.onDeviceDisappeared("Service gone :)")
 
         /*   gatt?.disconnect()
@@ -262,10 +269,10 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
     override fun onCreate() {
         super.onCreate()
 
-        Timber.plant(
+      /*  Timber.plant(
             Timber.DebugTree(),
             FileTree()
-        )
+        )*/
 
     }
 
@@ -323,8 +330,9 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
             manager.createNotificationChannel(channel)
         }
     }
+}
 
-    @SuppressLint("MissingPermission")
+   /* @SuppressLint("MissingPermission")
     private fun sendData(
         gatt: BluetoothGatt?,
         characteristic: BluetoothGattCharacteristic?,
@@ -362,20 +370,20 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         System.arraycopy(dateData, 0, data, 19, dateData.size)
         // Set the last offsets
         // timezone offset
-        /*    val calendar = Calendar.getInstance(timezone)
+        *//*    val calendar = Calendar.getInstance(timezone)
             val offsetMin = calendar.get(Calendar.ZONE_OFFSET) / 60000
             val offsetMinBytes = ByteBuffer.allocate(2).putShort(offsetMin.toShort()).array()
-    */
+    *//*
         // dst offset
-        /* val offsetDstMin = calendar.get(Calendar.DST_OFFSET) / 60000
-         val offsetDstMinBytes = ByteBuffer.allocate(2).putShort(offsetDstMin.toShort()).array()*/
+        *//* val offsetDstMin = calendar.get(Calendar.DST_OFFSET) / 60000
+         val offsetDstMinBytes = ByteBuffer.allocate(2).putShort(offsetDstMin.toShort()).array()*//*
 
 
         // TODO does weird stuff, probably not needed as camera has TZ configured
-        /*   data[91] = offsetMinBytes[0]
+        *//*   data[91] = offsetMinBytes[0]
            data[92] = offsetMinBytes[1]
            data[93] = offsetDstMinBytes[0]
-           data[94] = offsetDstMinBytes[1]*/
+           data[94] = offsetDstMinBytes[1]*//*
 
         val hex = data.toHex()
         Log.i("ayup", "Sending data: $hex with location $locationResultVar")
@@ -392,5 +400,5 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 }
 
 
-fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
+fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }*/
 

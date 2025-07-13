@@ -103,7 +103,7 @@ class LocationSenderService : Service() {
                 Log.e("BLEConnectEffect", "An error happened: $status")
                 fusedLocationClient.removeLocationUpdates(locationCallback)
                 shutdownTimer = Timer()
-                shutdownTimer.schedule(object : TimerTask() {
+               /* shutdownTimer.schedule(object : TimerTask() {
                     override fun run() {
 
                         Log.e("LocationSenderService", "Disconnecting and closing")
@@ -112,7 +112,7 @@ class LocationSenderService : Service() {
                         stopSelf(startId)
                     }
 
-                }, 120000)
+                }, 120000)*/
             } else {
                 shutdownTimer.cancel()
                 shutdownTimer.purge()
@@ -131,7 +131,7 @@ class LocationSenderService : Service() {
             //    currentOnStateChange(state)
         }
 
-        @SuppressLint("NewApi", "MissingPermission")
+        @SuppressLint("MissingPermission")
         override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
             super.onServicesDiscovered(gatt, status)
             //      state = state.copy(services = gatt.services)
@@ -196,8 +196,9 @@ class LocationSenderService : Service() {
 
     @SuppressLint("MissingPermission")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        this.startId = startId;
         startAsForegroundService()
+
+        this.startId = startId;
 
         val address = intent?.getStringExtra("address")
         var device: BluetoothDevice? = null
@@ -213,6 +214,7 @@ class LocationSenderService : Service() {
            }*/
 
         device = bluetoothManager.adapter.getRemoteDevice(address)
+        Log.i("ayup","ON START YEAH")
 
 
         if (gatt1 != null) {
@@ -223,13 +225,15 @@ class LocationSenderService : Service() {
 
             gatt1 = device?.connectGatt(this, true, callback)
         }
-        return START_REDELIVER_INTENT
+        return START_STICKY
     }
 
     @SuppressLint("MissingPermission")
     override fun onDestroy() {
         gatt1?.disconnect()
         gatt1?.close()
+        shutdownTimer.cancel()
+        shutdownTimer.purge()
         fusedLocationClient.removeLocationUpdates(locationCallback)
         super.onDestroy()
     }
@@ -365,3 +369,5 @@ class LocationSenderService : Service() {
             }
     }
 }
+
+fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }
