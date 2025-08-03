@@ -26,7 +26,9 @@ import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.companion.AssociationInfo
+import android.companion.CompanionDeviceManager
 import android.companion.CompanionDeviceService
+import android.companion.DevicePresenceEvent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -73,18 +75,6 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         // Same as the service but for the characteristic
         val CHARACTERISTIC_UUID: UUID = UUID.fromString("0000dd11-0000-1000-8000-00805f9b34fb")
 
-        const val PREFS_NAME = "GattPrefs"
-        const val KEY_DEVICE_ADDRESS = "device_address"
-
-
-        const val ACTION_START_ADVERTISING = "start_ad"
-        const val ACTION_STOP_ADVERTISING = "stop_ad"
-
-        // Important: this is just for simplicity, there are better ways to communicate between
-        // a service and an activity/view
-        val serverLogsState: MutableStateFlow<String> = MutableStateFlow("")
-        val isServerRunning = MutableStateFlow(false)
-
         private const val CHANNEL = "gatt_server_channel"
     }
 
@@ -93,153 +83,38 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         DeviceNotificationManager(applicationContext)
     }
 
-    /*    private val bluetoothManager: BluetoothManager by lazy {
-        applicationContext.getSystemService()!!
-    }
-
-    private val callback = object : BluetoothGattCallback() {
-        @SuppressLint("MissingPermission")
-        override fun onConnectionStateChange(
-            gatt: BluetoothGatt,
-            status: Int,
-            newState: Int,
-        ) {
-            super.onConnectionStateChange(gatt, status, newState)
-
-            // state = state.copy(gatt = gatt, connectionState = newState)
-            //  currentOnStateChange(state)
-
-            if (status != BluetoothGatt.GATT_SUCCESS) {
-                // Here you should handle the error returned in status based on the constants
-                // https://developer.android.com/reference/android/bluetooth/BluetoothGatt#summary
-                // For example for GATT_INSUFFICIENT_ENCRYPTION or
-                // GATT_INSUFFICIENT_AUTHENTICATION you should create a bond.
-                // https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createBond()
-
-                Log.e("BLEConnectEffect", "An error happened: $status")
-            } else {
-                Log.i("BLEConnectEffect", "Connected to device")
-                gatt.discoverServices()
-
-            }
-
-
-        }
-
-        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
-            super.onMtuChanged(gatt, mtu, status)
-            //    state = state.copy(gatt = gatt, mtu = mtu)
-            //    currentOnStateChange(state)
-        }
-
-        override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-            super.onServicesDiscovered(gatt, status)
-            //      state = state.copy(services = gatt.services)
-            //     currentOnStateChange(state)
-            val service = gatt.services?.find { it.uuid == SERVICE_UUID }
-
-            // If the GATTServerSample service is found, get the characteristic
-            characteristic = service?.getCharacteristic(CHARACTERISTIC_UUID)
-
-            sendData(gatt, characteristic)
-
-        }
-
-        override fun onCharacteristicWrite(
-            gatt: BluetoothGatt?,
-            characteristic: BluetoothGattCharacteristic?,
-            status: Int,
-        ) {
-            super.onCharacteristicWrite(gatt, characteristic, status)
-            //     state = state.copy(messageSent = status == BluetoothGatt.GATT_SUCCESS)
-            //     currentOnStateChange(state)
-        }
-
-        @Suppress("DEPRECATION", "OVERRIDE_DEPRECATION")
-        override fun onCharacteristicRead(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            status: Int,
-        ) {
-            super.onCharacteristicRead(gatt, characteristic, status)
-            //   if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            doOnRead(characteristic.value)
-            //    }
-        }
-
-        override fun onCharacteristicRead(
-            gatt: BluetoothGatt,
-            characteristic: BluetoothGattCharacteristic,
-            value: ByteArray,
-            status: Int,
-        ) {
-            super.onCharacteristicRead(gatt, characteristic, value, status)
-            doOnRead(value)
-        }
-
-        private fun doOnRead(value: ByteArray) {
-            //     state = state.copy(messageReceived = value.decodeToString())
-            //      currentOnStateChange(state)
-        }
-    }*/
 
     @SuppressLint("MissingPermission")
-    override fun onDeviceAppeared(associationInfo: AssociationInfo) {
-        super.onDeviceAppeared(associationInfo)
+    override fun onDevicePresenceEvent(event: DevicePresenceEvent) {
+        super.onDevicePresenceEvent(event)
         if (missingPermissions()) {
             Log.e(CompanionDeviceSampleService::class.java.toString(), "aaa");
             return
         }
 
-        notificationManager.onDeviceAppeared("nah", "HERE I AM")
+        if (event.event == DevicePresenceEvent.EVENT_BLE_APPEARED) {
 
+            val associationId = event.getAssociationId()
+            val deviceManager = getSystemService<CompanionDeviceManager>()
+            val associatedDevices = deviceManager?.getMyAssociations()
+            val associationInfo = associatedDevices?.find { it.id == associationId }
+            val address = associationInfo?.deviceMacAddress?.toString()
+            /*  var device: BluetoothDevice? = null
+            if (Build.VERSION.SDK_INT >= 34) {
+                device = associationInfo.associatedDevice?.bleDevice?.device
+            }
+            if (device == null) {
+                device = bluetoothManager.adapter.getRemoteDevice(address)
+            }*/
 
-        val address = associationInfo.deviceMacAddress?.toString() ?: return
-        /*  var device: BluetoothDevice? = null
-        if (Build.VERSION.SDK_INT >= 34) {
-            device = associationInfo.associatedDevice?.bleDevice?.device
+            val serviceIntent = Intent(this, LocationSenderService::class.java)
+            serviceIntent.putExtra("address", address?.uppercase(Locale.getDefault()))
+            Log.i("cdm","WILL STRART THE FOREGROUND BITCH")
+            notificationManager.onDeviceAppeared("nah", "HERE I AM")
+            startForegroundService(serviceIntent)
         }
-        if (device == null) {
-            device = bluetoothManager.adapter.getRemoteDevice(address)
-        }*/
-
-        val serviceIntent = Intent(this, LocationSenderService::class.java)
-        serviceIntent.putExtra("address", address.uppercase(Locale.getDefault()))
-        Log.i("cdm","WILL STRART THE FOREGROUND BITCH")
-        startForegroundService(serviceIntent)
-
     }
 
-    @SuppressLint("MissingPermission")
-    override fun onDeviceDisappeared(associationInfo: AssociationInfo) {
-        super.onDeviceDisappeared(associationInfo)
-        if (missingPermissions()) {
-            return
-        }
-
-
-
-
-        /* Timer().schedule(object : TimerTask() {
-             override fun run() {
-
-
-                 mHandler.post {
-                     Toast.makeText(applicationContext, "byebye", Toast.LENGTH_SHORT).show()
-                 }
-                 gatt?.disconnect()
-
-             }
-
-         }, 120000)
-
-
-         stopSelf()*/
-
-        /* notificationManager.onDeviceDisappeared(
-             address = associationInfo.deviceMacAddress?.toString() ?: return,
-         )*/
-    }
 
 
     @SuppressLint("MissingPermission")

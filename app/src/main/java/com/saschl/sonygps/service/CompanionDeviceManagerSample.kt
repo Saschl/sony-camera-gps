@@ -31,6 +31,7 @@ import android.companion.AssociationInfo
 import android.companion.AssociationRequest
 import android.companion.BluetoothLeDeviceFilter
 import android.companion.CompanionDeviceManager
+import android.companion.ObservingDevicePresenceRequest
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
@@ -615,10 +616,8 @@ private suspend fun requestDeviceAssociation(deviceManager: CompanionDeviceManag
         }
 
         override fun onAssociationCreated(associationInfo: AssociationInfo) {
-            //associationInfo.id
 
-            deviceManager.startObservingDevicePresence(associationInfo.associatedDevice!!.bleDevice!!.device!!.address)
-
+            deviceManager.startObservingDevicePresence(ObservingDevicePresenceRequest.Builder().setAssociationId(associationInfo.id).build())
             // This callback was added in API 33 but the result is also send in the activity result.
             // For handling backwards compatibility we can just have all the logic there instead
         }

@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.saschl.sonygps"
-    compileSdk = 34
+    compileSdk = 36
 
     buildFeatures {
         compose = true
@@ -17,8 +17,8 @@ android {
 
     defaultConfig {
         applicationId = "com.saschl.sonygps"
-        minSdk = 33
-        targetSdk = 35
+        minSdk = 36
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
