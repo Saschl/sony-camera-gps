@@ -66,6 +66,8 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
     private var cancellationToken = CancellationTokenSource()
 
+    private val locationSenderService = LocationSenderService(this)
+
 
     companion object {
 
@@ -107,11 +109,14 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
                 device = bluetoothManager.adapter.getRemoteDevice(address)
             }*/
 
-            val serviceIntent = Intent(this, LocationSenderService::class.java)
-            serviceIntent.putExtra("address", address?.uppercase(Locale.getDefault()))
+         /*   val serviceIntent = Intent(this, LocationSenderService::class.java)
+            serviceIntent.putExtra("address", address?.uppercase(Locale.getDefault()))*/
             Log.i("cdm","WILL STRART THE FOREGROUND BITCH")
             notificationManager.onDeviceAppeared("nah", "HERE I AM")
-            startForegroundService(serviceIntent)
+            locationSenderService.onCreate();
+            locationSenderService.onStartCommand(address?.uppercase(Locale.getDefault()))
+           // startForegroundService(serviceIntent)
+
         }
     }
 
@@ -128,6 +133,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
         stopService(Intent(this, LocationSenderService::class.java))
         notificationManager.onDeviceDisappeared("Service gone :)")
+        locationSenderService.onDestroy();
 
         /*   gatt?.disconnect()
            gatt?.close()*/

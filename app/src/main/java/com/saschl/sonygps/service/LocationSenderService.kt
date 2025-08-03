@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.location.Location
@@ -32,8 +33,9 @@ import java.util.Timer
 import java.util.TimerTask
 import java.util.UUID
 
-class LocationSenderService : Service() {
+class LocationSenderService {
 
+    private lateinit var context: Context
     private var startId: Int = 0
     private val binder = LocalBinder()
 
@@ -64,12 +66,18 @@ class LocationSenderService : Service() {
         private const val CHANNEL = "gatt_server_channel"
     }
 
+
+    constructor(context: Context) {
+        this.context = context;
+    }
+
+
     private val notificationManager: DeviceNotificationManager by lazy {
-        DeviceNotificationManager(applicationContext)
+        DeviceNotificationManager(context.applicationContext)
     }
 
     private val bluetoothManager: BluetoothManager by lazy {
-        applicationContext.getSystemService()!!
+        context.applicationContext.getSystemService()!!
     }
 
 
@@ -77,9 +85,9 @@ class LocationSenderService : Service() {
         fun getService(): LocationSenderService = this@LocationSenderService
     }
 
-    override fun onBind(intent: Intent?): IBinder {
+/*     fun onBind(intent: Intent?): IBinder {
         return binder
-    }
+    }*/
 
     private val callback = object : BluetoothGattCallback() {
         @SuppressLint("MissingPermission")
@@ -195,12 +203,12 @@ class LocationSenderService : Service() {
 
 
     @SuppressLint("MissingPermission")
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startAsForegroundService()
+    fun onStartCommand(address: String?) {
+       // startAsForegroundService()
 
-        this.startId = startId;
+     //   this.startId = startId;
 
-        val address = intent?.getStringExtra("address")
+      //  val address = intent?.getStringExtra("address")
         var device: BluetoothDevice? = null
 
         // if(address == null)
@@ -223,31 +231,31 @@ class LocationSenderService : Service() {
         } else {
             Log.i("ayup", "Gatt will be created")
 
-            gatt1 = device?.connectGatt(this, true, callback)
+            gatt1 = device?.connectGatt(context, true, callback)
         }
-        return START_STICKY
+       // return START_STICKY
     }
 
     @SuppressLint("MissingPermission")
-    override fun onDestroy() {
+    fun onDestroy() {
         gatt1?.disconnect()
         gatt1?.close()
         shutdownTimer.cancel()
         shutdownTimer.purge()
         fusedLocationClient.removeLocationUpdates(locationCallback)
-        super.onDestroy()
+       // super.onDestroy()
     }
 
     @SuppressLint("MissingPermission")
-    override fun onCreate() {
-        super.onCreate()
+    fun onCreate() {
+       // super.onCreate()
         /* if (missingPermissions()) {
              Log.e(CompanionDeviceSampleService::class.java.toString(),"aaa");
              return
          }*/
 
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(fetchedLocation: LocationResult) {
                 //Log.i("ayup", "Location result received " + fetchedLocation.lastLocation.toString())
@@ -287,7 +295,7 @@ class LocationSenderService : Service() {
         }
     }
 
-    private fun startAsForegroundService() {
+    /*private fun startAsForegroundService() {
         // create the notification channel
         NotificationsHelper.createNotificationChannel(this)
 
@@ -298,7 +306,7 @@ class LocationSenderService : Service() {
             NotificationsHelper.buildNotification(this),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION.or(ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
         )
-    }
+    }*/
 
     @SuppressLint("MissingPermission")
     private fun sendData(
