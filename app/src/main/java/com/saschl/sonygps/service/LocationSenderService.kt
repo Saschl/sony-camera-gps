@@ -258,7 +258,6 @@ class LocationSenderService {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(fetchedLocation: LocationResult) {
-                //Log.i("ayup", "Location result received " + fetchedLocation.lastLocation.toString())
 
                 // any location is better than none for now
                 val lastLocation = fetchedLocation.lastLocation
