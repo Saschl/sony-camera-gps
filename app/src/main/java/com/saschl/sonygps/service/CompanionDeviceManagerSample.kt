@@ -96,6 +96,7 @@ import kotlin.random.Random
 
 @Composable
 fun CompanionDeviceManagerSample() {
+
     val context = LocalContext.current
     val deviceManager = context.getSystemService<CompanionDeviceManager>()
     val adapter = context.getSystemService<BluetoothManager>()?.adapter
@@ -114,7 +115,8 @@ fun CompanionDeviceManagerSample() {
             ) {
 
                 DevicesScreen(deviceManager) { device ->
-                    selectedDevice = (device.device ?: adapter.getRemoteDevice(device.address))
+                    selectedDevice =
+                        (device.device ?: adapter.getRemoteDevice(device.address))
                 }
             }
         } else {
@@ -127,10 +129,10 @@ fun CompanionDeviceManagerSample() {
                 ConnectDeviceScreen(device = selectedDevice!!) {
                     selectedDevice = null
                 }
-            }
+                }
 
+            }
         }
-    }
 }
 
 
@@ -399,6 +401,7 @@ private fun DevicesScreen(
     onConnect: (AssociatedDeviceCompat) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
     var associatedDevices by remember {
         // If we already associated the device no need to do it again.
         mutableStateOf(deviceManager.getAssociatedDevices())
@@ -410,6 +413,7 @@ private fun DevicesScreen(
         }
 
     }*/
+
 
     Scaffold(
         topBar = {
@@ -424,6 +428,7 @@ private fun DevicesScreen(
             .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            Button(onClick = { context.startActivity(Intent(context, com.saschl.sonygps.ui.LogViewerActivity::class.java))}) { Text(text = "Request Location") }
             ScanForDevicesMenu(deviceManager) {
                 associatedDevices = associatedDevices + it
             }

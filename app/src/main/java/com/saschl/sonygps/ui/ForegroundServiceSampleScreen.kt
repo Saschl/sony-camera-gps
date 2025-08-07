@@ -21,7 +21,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.saschl.sonygps.R
-import com.saschl.sonygps.ui.theme.ForegroundService14Theme
 
 @Composable
 internal fun ForegroundServiceSampleScreen(
@@ -30,19 +29,17 @@ internal fun ForegroundServiceSampleScreen(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    ForegroundService14Theme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            ForegroundServiceSampleScreenContent(
-                serviceRunning = serviceRunning,
-                currentLocation = currentLocation,
-                onClick = onClick,
-                modifier = modifier
-            )
-        }
-    }
+ /*   Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    )*/ //{
+        ForegroundServiceSampleScreenContent(
+            serviceRunning = serviceRunning,
+            currentLocation = currentLocation,
+            onClick = onClick,
+            modifier = modifier
+        )
+    //}
 }
 
 @Composable

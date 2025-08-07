@@ -57,7 +57,7 @@ class LogViewerActivity : ComponentActivity() {
         logTextView = TextView(this).apply {
             setTextIsSelectable(true)
             setPadding(16, 16, 16, 16)
-            setBackgroundColor(0xFFF5F5F5.toInt()) // Light gray background
+           // setBackgroundColor(0xFFF5F5F5.toInt()) // Light gray background
             textSize = 12f
         }
 

@@ -14,6 +14,7 @@ import androidx.core.view.WindowInsetsCompat
 import com.saschl.sonygps.service.CompanionDeviceManagerSample
 import com.saschl.sonygps.service.FileTree
 import com.saschl.sonygps.service.GlobalExceptionHandler
+import com.saschl.sonygps.ui.theme.ForegroundService14Theme
 import timber.log.Timber
 
 class MainActivity : ComponentActivity() {
@@ -57,19 +58,23 @@ class MainActivity : ComponentActivity() {
                 startActivity(Intent(this@MainActivity, com.saschl.sonygps.ui.LogViewerActivity::class.java))
             }
         }
-        layout.addView(logButton)
+      //  layout.addView(logButton)
         val composeView = androidx.compose.ui.platform.ComposeView(this).apply {
-            setContent { CompanionDeviceManagerSample() }
+            setContent {
+                ForegroundService14Theme {
+                    CompanionDeviceManagerSample()
+                }
+            }
         }
         layout.addView(composeView)
         setContentView(layout)
 
         // Handle system bars to prevent button from appearing in status bar
-        ViewCompat.setOnApplyWindowInsetsListener(layout) { view, insets ->
+       /* ViewCompat.setOnApplyWindowInsetsListener(layout) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(16, systemBars.top + 16, 16, systemBars.bottom + 16)
             insets
-        }
+        }*/
 
         checkAndRequestNotificationPermission()
 

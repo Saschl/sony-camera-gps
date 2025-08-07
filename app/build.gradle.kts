@@ -72,6 +72,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.timber)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.material)
 
     // Room database dependencies
     implementation(libs.androidx.room.runtime)

@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 class LogRepository(context: Context) {
     private val logDao = LogDatabase.getDatabase(context).logDao()
@@ -34,8 +35,6 @@ class LogRepository(context: Context) {
     suspend fun getRecentLogs(limit: Int = 200): List<LogEntry> = logDao.getRecentLogs(limit)
 
     fun clearAllLogs() {
-        scope.launch {
-            logDao.clearAllLogs()
-        }
+        runBlocking { logDao.clearAllLogs() }
     }
 }
