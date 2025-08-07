@@ -191,12 +191,6 @@ class LocationSenderService {
 
     @SuppressLint("MissingPermission")
     fun onStartCommand(address: String?) {
-       // startAsForegroundService()
-
-     //   this.startId = startId;
-
-      //  val address = intent?.getStringExtra("address")
-        var device: BluetoothDevice? = null
 
         // if(address == null)
 
@@ -208,15 +202,20 @@ class LocationSenderService {
                }
            }*/
 
-        device = bluetoothManager.adapter.getRemoteDevice(address)
-        Log.i("ayup","ON START YEAH")
+        // startAsForegroundService()
+
+        //   this.startId = startId;
+
+        //  val address = intent?.getStringExtra("address")
+        val device = bluetoothManager.adapter.getRemoteDevice(address)
+        Timber.i("ON START YEAH")
 
 
         if (gatt1 != null) {
-            Log.i("ayup", "Gatt will be reused")
+            Timber.i("Gatt will be reused")
             //     gatt1?.connect()
         } else {
-            Log.i("ayup", "Gatt will be created")
+            Timber.i( "Gatt will be created")
 
             gatt1 = device?.connectGatt(context, true, callback)
         }
@@ -227,6 +226,7 @@ class LocationSenderService {
     fun onDestroy() {
         gatt1?.disconnect()
         gatt1?.close()
+        gatt1 = null
 
         fusedLocationClient.removeLocationUpdates(locationCallback)
        // super.onDestroy()
