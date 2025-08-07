@@ -56,10 +56,10 @@
             </intent-filter>
         </service>
 
-      <!--  <service
+        <service
             android:name=".service.LocationSenderService"
             android:foregroundServiceType="location|connectedDevice">
-        </service>-->
+        </service>
 
 
 </application>
