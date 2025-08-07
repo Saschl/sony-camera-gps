@@ -34,7 +34,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Build
-import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationChannelCompat
@@ -88,7 +87,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
     override fun onDevicePresenceEvent(event: DevicePresenceEvent) {
         super.onDevicePresenceEvent(event)
         if (missingPermissions()) {
-            Log.e(CompanionDeviceSampleService::class.java.toString(), "aaa");
+            Timber.e(CompanionDeviceSampleService::class.java.toString(), "Missing permissions")
             return
         }
 
@@ -109,7 +108,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
             val serviceIntent = Intent(this, LocationSenderService::class.java)
             serviceIntent.putExtra("address", address?.uppercase(Locale.getDefault()))
-            Log.i("cdm","WILL STRART THE FOREGROUND BITCH")
+            Timber.i("WILL STRART THE FOREGROUND BITCH")
             notificationManager.onDeviceAppeared("nah", "HERE I AM")
             startForegroundService(serviceIntent)
         }
@@ -131,7 +130,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
         /*   gatt?.disconnect()
            gatt?.close()*/
-        Log.e("service", "Destroyed service")
+        Timber.e("Destroyed service")
     }
 
     /*  override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -206,74 +205,3 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         }
     }
 }
-
-   /* @SuppressLint("MissingPermission")
-    private fun sendData(
-        gatt: BluetoothGatt?,
-        characteristic: BluetoothGattCharacteristic?,
-    ) {
-        val data = ByteArray(95)
-
-        data[0] = 0x00
-        data[1] = 0x5D.toByte()
-
-
-        // bytes 2-4
-        val fixedData = "0802FC".chunked(2)
-            .map { it.toInt(16).toByte() }
-            .toByteArray()
-        System.arraycopy(fixedData, 0, data, 2, fixedData.size)
-
-        // transmit timezone offset? NO
-        data[5] = 0x00.toByte()
-
-        val fixedData2 = "0000101010".chunked(2)
-            .map { it.toInt(16).toByte() }
-            .toByteArray()
-
-        System.arraycopy(fixedData2, 0, data, 6, fixedData2.size)
-        // position information
-        //  Log.e("thisThing", locationResultVar!!.latitude.toString());
-        val latitude = locationResultVar.latitude
-        val longitude = locationResultVar.longitude
-        val locationData = set_location(latitude, longitude)
-        System.arraycopy(locationData, 0, data, 11, locationData.size)
-
-
-        // here UTC time must be used
-        val dateData = set_date(TimeZone.getTimeZone("UTC").toZoneId())
-        System.arraycopy(dateData, 0, data, 19, dateData.size)
-        // Set the last offsets
-        // timezone offset
-        *//*    val calendar = Calendar.getInstance(timezone)
-            val offsetMin = calendar.get(Calendar.ZONE_OFFSET) / 60000
-            val offsetMinBytes = ByteBuffer.allocate(2).putShort(offsetMin.toShort()).array()
-    *//*
-        // dst offset
-        *//* val offsetDstMin = calendar.get(Calendar.DST_OFFSET) / 60000
-         val offsetDstMinBytes = ByteBuffer.allocate(2).putShort(offsetDstMin.toShort()).array()*//*
-
-
-        // TODO does weird stuff, probably not needed as camera has TZ configured
-        *//*   data[91] = offsetMinBytes[0]
-           data[92] = offsetMinBytes[1]
-           data[93] = offsetDstMinBytes[0]
-           data[94] = offsetDstMinBytes[1]*//*
-
-        val hex = data.toHex()
-        Log.i("ayup", "Sending data: $hex with location $locationResultVar")
-
-        if (characteristic != null) {
-            val result = gatt?.writeCharacteristic(
-                characteristic,
-                data,
-                BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
-            )
-            Log.i("ayup", "Write result: $result")
-        }
-    }
-}
-
-
-fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }*/
-

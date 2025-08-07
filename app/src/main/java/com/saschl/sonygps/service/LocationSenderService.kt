@@ -14,7 +14,6 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import android.os.Looper
-import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.ServiceCompat
 import androidx.core.content.getSystemService
@@ -27,6 +26,7 @@ import com.google.android.gms.location.Priority
 import com.saschl.sonygps.notification.NotificationsHelper
 import com.saschl.sonygps.service.CompanionDeviceSampleService.DeviceNotificationManager
 import kotlinx.coroutines.flow.MutableStateFlow
+import timber.log.Timber
 import java.util.TimeZone
 import java.util.Timer
 import java.util.TimerTask
@@ -100,7 +100,7 @@ class LocationSenderService : Service() {
                 // GATT_INSUFFICIENT_AUTHENTICATION you should create a bond.
                 // https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createBond()
 
-                Log.e("BLEConnectEffect", "An error happened: $status")
+                Timber.e("BLEConnectEffect", "An error happened: $status")
                 fusedLocationClient.removeLocationUpdates(locationCallback)
                 shutdownTimer = Timer()
                /* shutdownTimer.schedule(object : TimerTask() {
@@ -117,7 +117,7 @@ class LocationSenderService : Service() {
                 shutdownTimer.cancel()
                 shutdownTimer.purge()
 
-                Log.i("BLEConnectEffect", "Connected to device")
+                Timber.i("BLEConnectEffect", "Connected to device")
                 gatt.discoverServices()
 
             }
@@ -214,14 +214,14 @@ class LocationSenderService : Service() {
            }*/
 
         device = bluetoothManager.adapter.getRemoteDevice(address)
-        Log.i("ayup","ON START YEAH")
+        Timber.i("ayup","ON START YEAH")
 
 
         if (gatt1 != null) {
-            Log.i("ayup", "Gatt will be reused")
+            Timber.i("ayup", "Gatt will be reused")
             //     gatt1?.connect()
         } else {
-            Log.i("ayup", "Gatt will be created")
+            Timber.i("ayup", "Gatt will be created")
 
             gatt1 = device?.connectGatt(this, true, callback)
         }
@@ -262,19 +262,19 @@ class LocationSenderService : Service() {
                 if (lastLocation != null) {
                     // new location is way less accurate, only take if the old location is very old
                     if ((lastLocation.accuracy - locationResultVar.accuracy) > 200) {
-                        Log.w(
+                        Timber.w(
                             "LOCATION",
                             "New location is way less accurate than the old one, will only update if the last location is older than 5 minutes"
                         )
                         if (lastLocation.time - locationResultVar.time > 1000 * 60 * 5) {
-                            Log.d(
+                            Timber.d(
                                 "LOCATION",
                                 "Last accurate location is older than 5 minutes, updating anyway"
                             )
                             locationResultVar = lastLocation
                         }
                     } else {
-                        Log.w(
+                        Timber.w(
                             "LOCATION",
                             "New location is more accurate than the old one, updating"
                         )
@@ -357,7 +357,7 @@ class LocationSenderService : Service() {
            data[94] = offsetDstMinBytes[1]*/
 
         val hex = data.toHex()
-        Log.i("ayup", "Sending data: $hex with location $locationResultVar")
+        Timber.i("ayup", "Sending data: $hex with location $locationResultVar")
 
             if (characteristic != null) {
                 val result = gatt?.writeCharacteristic(
@@ -365,7 +365,7 @@ class LocationSenderService : Service() {
                     data,
                     BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
                 )
-                Log.i("ayup", "Write result: $result")
+                Timber.i("ayup", "Write result: $result")
             }
     }
 }

@@ -46,6 +46,14 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".ui.LogViewerActivity"
+            android:exported="false"
+            android:label="Log Viewer"
+            android:theme="@style/Theme.ForegroundService14"
+
+            />
+
          <!--  Declare the foreground service type  -->
         <service
             android:name="com.saschl.sonygps.service.CompanionDeviceSampleService"
