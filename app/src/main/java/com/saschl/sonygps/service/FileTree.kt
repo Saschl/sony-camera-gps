@@ -3,6 +3,11 @@ package com.saschl.sonygps.service
 import timber.log.Timber
 
 class FileTree : Timber.Tree() {
+    companion object {
+        private val logBuffer = mutableListOf<String>()
+        fun getLogs(): List<String> = logBuffer.toList()
+        fun clearLogs() = logBuffer.clear()
+    }
 
     /**
      * Write a log message to its destination. Called for all level-specific methods by default.
@@ -13,10 +18,19 @@ class FileTree : Timber.Tree() {
      * @param t Accompanying exceptions. May be `null`, but then `message` will not be.
      */
     override fun log(priority: Int, tag: String?, message: String, t: Throwable?) {
-        /* if (!Fabric.isInitialized()) {
-             return
-         }
+        val logEntry = "[${priorityToString(priority)}] ${tag ?: "App"}: $message" +
+            (t?.let { "\n${it.stackTraceToString()}" } ?: "")
+        logBuffer.add(logEntry)
+        if (logBuffer.size > 200) logBuffer.removeAt(0) // keep buffer size reasonable
+    }
 
-         Crashlytics.log(priority, tag, message)*/
+    private fun priorityToString(priority: Int): String = when (priority) {
+        android.util.Log.VERBOSE -> "V"
+        android.util.Log.DEBUG -> "D"
+        android.util.Log.INFO -> "I"
+        android.util.Log.WARN -> "W"
+        android.util.Log.ERROR -> "E"
+        android.util.Log.ASSERT -> "A"
+        else -> priority.toString()
     }
 }

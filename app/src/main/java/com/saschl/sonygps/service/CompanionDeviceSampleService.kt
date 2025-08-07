@@ -19,13 +19,7 @@ package com.saschl.sonygps.service
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.NotificationManager
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothGatt
-import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
-import android.bluetooth.BluetoothManager
-import android.bluetooth.BluetoothProfile
-import android.companion.AssociationInfo
 import android.companion.CompanionDeviceManager
 import android.companion.CompanionDeviceService
 import android.companion.DevicePresenceEvent
@@ -33,7 +27,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
-import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
@@ -43,10 +36,8 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.IconCompat
 import com.google.android.gms.tasks.CancellationTokenSource
-import kotlinx.coroutines.flow.MutableStateFlow
 import timber.log.Timber
 import java.util.Locale
-import java.util.TimeZone
 import java.util.UUID
 
 
@@ -111,8 +102,8 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
          /*   val serviceIntent = Intent(this, LocationSenderService::class.java)
             serviceIntent.putExtra("address", address?.uppercase(Locale.getDefault()))*/
-            Log.i("cdm","WILL STRART THE FOREGROUND BITCH")
             notificationManager.onDeviceAppeared("nah", "HERE I AM")
+            Timber.d("Calling locationSenderService.onCreate() and onStartCommand with address: ${address?.uppercase(Locale.getDefault())}")
             locationSenderService.onCreate();
             locationSenderService.onStartCommand(address?.uppercase(Locale.getDefault()))
            // startForegroundService(serviceIntent)
@@ -131,8 +122,10 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
         //fusedLocationClient.removeLocationUpdates(locationCallback)
 
-        stopService(Intent(this, LocationSenderService::class.java))
-        notificationManager.onDeviceDisappeared("Service gone :)")
+       // stopService(Intent(this, LocationSenderService::class.java))
+        Timber.i("Service destroyed")
+        //notificationManager.onDeviceDisappeared("Service gone :)")
+        Timber.d("Calling locationSenderService.onDestroy()")
         locationSenderService.onDestroy();
 
         /*   gatt?.disconnect()
@@ -149,7 +142,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
     @SuppressLint("MissingPermission")
     override fun onCreate() {
         super.onCreate()
-
+        Timber.i("CompanionDeviceSampleService created")
       /*  Timber.plant(
             Timber.DebugTree(),
             FileTree()
@@ -282,4 +275,3 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
 
 fun ByteArray.toHex(): String = joinToString(separator = "") { eachByte -> "%02x".format(eachByte) }*/
-

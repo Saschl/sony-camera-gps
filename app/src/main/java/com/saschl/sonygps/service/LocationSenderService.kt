@@ -28,6 +28,7 @@ import com.google.android.gms.location.Priority
 import com.saschl.sonygps.notification.NotificationsHelper
 import com.saschl.sonygps.service.CompanionDeviceSampleService.DeviceNotificationManager
 import kotlinx.coroutines.flow.MutableStateFlow
+import timber.log.Timber
 import java.util.TimeZone
 import java.util.Timer
 import java.util.TimerTask
@@ -35,9 +36,7 @@ import java.util.UUID
 
 class LocationSenderService {
 
-    private lateinit var context: Context
-    private var startId: Int = 0
-    private val binder = LocalBinder()
+    private val context: Context
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var locationCallback: LocationCallback
@@ -46,8 +45,6 @@ class LocationSenderService {
     private var characteristic: BluetoothGattCharacteristic? = null
 
     private var locationResultVar: Location = Location("")
-
-    private var shutdownTimer = Timer()
 
     companion object {
 
@@ -66,19 +63,22 @@ class LocationSenderService {
         private const val CHANNEL = "gatt_server_channel"
     }
 
+    private val bluetoothManager: BluetoothManager
+
+
+
 
     constructor(context: Context) {
         this.context = context;
+        this.bluetoothManager = context.applicationContext.getSystemService()!!
+
     }
 
 
-    private val notificationManager: DeviceNotificationManager by lazy {
+   /* private val notificationManager: DeviceNotificationManager by lazy {
         DeviceNotificationManager(context.applicationContext)
-    }
+    }*/
 
-    private val bluetoothManager: BluetoothManager by lazy {
-        context.applicationContext.getSystemService()!!
-    }
 
 
     inner class LocalBinder : Binder() {
@@ -108,24 +108,11 @@ class LocationSenderService {
                 // GATT_INSUFFICIENT_AUTHENTICATION you should create a bond.
                 // https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createBond()
 
-                Log.e("BLEConnectEffect", "An error happened: $status")
+                Timber.e("An error happened: $status")
                 fusedLocationClient.removeLocationUpdates(locationCallback)
-                shutdownTimer = Timer()
-               /* shutdownTimer.schedule(object : TimerTask() {
-                    override fun run() {
 
-                        Log.e("LocationSenderService", "Disconnecting and closing")
-                        gatt.disconnect()
-                        gatt.close()
-                        stopSelf(startId)
-                    }
-
-                }, 120000)*/
             } else {
-                shutdownTimer.cancel()
-                shutdownTimer.purge()
-
-                Log.i("BLEConnectEffect", "Connected to device")
+                Timber.i("Connected to device")
                 gatt.discoverServices()
 
             }
@@ -240,8 +227,7 @@ class LocationSenderService {
     fun onDestroy() {
         gatt1?.disconnect()
         gatt1?.close()
-        shutdownTimer.cancel()
-        shutdownTimer.purge()
+
         fusedLocationClient.removeLocationUpdates(locationCallback)
        // super.onDestroy()
     }
