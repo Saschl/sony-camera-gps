@@ -81,13 +81,13 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
     override fun onDevicePresenceEvent(event: DevicePresenceEvent) {
         super.onDevicePresenceEvent(event)
         if (missingPermissions()) {
-            Log.e(CompanionDeviceSampleService::class.java.toString(), "aaa");
+            Timber.e(CompanionDeviceSampleService::class.java.toString(), "aaa");
             return
         }
 
         if (event.event == DevicePresenceEvent.EVENT_BLE_APPEARED) {
 
-            val associationId = event.getAssociationId()
+            val associationId = event.associationId
             val deviceManager = getSystemService<CompanionDeviceManager>()
             val associatedDevices = deviceManager?.getMyAssociations()
             val associationInfo = associatedDevices?.find { it.id == associationId }

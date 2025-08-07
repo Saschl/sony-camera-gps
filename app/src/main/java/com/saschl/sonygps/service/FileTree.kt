@@ -1,5 +1,6 @@
 package com.saschl.sonygps.service
 
+import android.util.Log
 import timber.log.Timber
 
 class FileTree : Timber.Tree() {
@@ -21,6 +22,7 @@ class FileTree : Timber.Tree() {
         val logEntry = "[${priorityToString(priority)}] ${tag ?: "App"}: $message" +
             (t?.let { "\n${it.stackTraceToString()}" } ?: "")
         logBuffer.add(logEntry)
+        Log.i("FileTree", logEntry) // Also log to Android's Logcat for visibility
         if (logBuffer.size > 200) logBuffer.removeAt(0) // keep buffer size reasonable
     }
 
