@@ -57,7 +57,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
 
     private var cancellationToken = CancellationTokenSource()
 
-    private val locationSenderService = LocationSenderService(this)
+    private lateinit var locationSenderService: LocationSenderService
 
 
     companion object {
@@ -143,6 +143,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
     override fun onCreate() {
         super.onCreate()
         Timber.i("CompanionDeviceSampleService created")
+        locationSenderService = LocationSenderService(this)
       /*  Timber.plant(
             Timber.DebugTree(),
             FileTree()
