@@ -20,8 +20,8 @@ android {
         applicationId = "com.saschl.sonygps"
         minSdk = 36
         targetSdk = 36
-        versionCode = 11
-        versionName = "1.3.0"
+        versionCode = 12
+        versionName = "1.3.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
