@@ -1,98 +1,162 @@
 package com.saschl.sonygps.ui
 
 import android.os.Bundle
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.activity.ComponentActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.lifecycleScope
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.saschl.sonygps.service.FileTree
+import com.saschl.sonygps.ui.theme.ForegroundService14Theme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class LogViewerActivity : ComponentActivity() {
-    private lateinit var logTextView: TextView
-    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val mainLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(16, 16, 16, 16)
-        }
-
-        // Title bar
-        val titleView = TextView(this).apply {
-            text = "Application Logs"
-            textSize = 24f
-            setPadding(0, 0, 0, 16)
-            setTypeface(null, android.graphics.Typeface.BOLD)
-        }
-
-        // Clear logs button
-        val clearButton = Button(this).apply {
-            text = "Clear All Logs"
-            setOnClickListener {
-                lifecycleScope.launch {
-                    FileTree.clearLogs()
-                    refreshLogs()
+        setContent {
+            ForegroundService14Theme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    LogViewerScreen()
                 }
-
             }
-        }
-
-        // SwipeRefreshLayout containing the log content
-        swipeRefreshLayout = SwipeRefreshLayout(this).apply {
-            setOnRefreshListener {
-                refreshLogs()
-            }
-            // Set refresh colors
-            setColorSchemeResources(
-                android.R.color.holo_blue_bright,
-                android.R.color.holo_green_light,
-                android.R.color.holo_orange_light,
-                android.R.color.holo_red_light
-            )
-        }
-
-        // Log content in scrollable view
-        logTextView = TextView(this).apply {
-            setTextIsSelectable(true)
-            setPadding(16, 16, 16, 16)
-           // setBackgroundColor(0xFFF5F5F5.toInt()) // Light gray background
-            textSize = 12f
-        }
-
-        // Load initial logs
-        refreshLogs()
-
-        swipeRefreshLayout.addView(logTextView)
-        mainLayout.addView(titleView)
-        mainLayout.addView(clearButton)
-        mainLayout.addView(swipeRefreshLayout)
-
-        setContentView(mainLayout)
-
-        // Handle system bars (status bar, navigation bar)
-        ViewCompat.setOnApplyWindowInsetsListener(mainLayout) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(16, systemBars.top + 16, 16, systemBars.bottom + 16)
-            insets
         }
     }
+}
 
-    private fun refreshLogs() {
-        val logs = FileTree.getLogs()
-        logTextView.text = if (logs.isEmpty()) {
-            "No logs available yet. Logs will appear here as the app runs.\n\nPull down to refresh and fetch new logs."
-        } else {
-            logs.joinToString("\n\n")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LogViewerScreen() {
+    val scope = rememberCoroutineScope()
+    var logs by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    // Function to refresh logs
+    val refreshLogs = suspend {
+        isRefreshing = true
+        try {
+            // Add a small delay for better UX
+            delay(300)
+            logs = FileTree.getLogs()
+        } catch (e: Exception) {
+            logs = listOf("Error loading logs: ${e.message}")
         }
+        isRefreshing = false
+    }
 
-        // Stop the refresh animation
-        swipeRefreshLayout.isRefreshing = false
+    // Load initial logs
+    LaunchedEffect(Unit) {
+        refreshLogs()
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Application Logs",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                }
+            )
+        }
+    ) { paddingValues ->
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                scope.launch {
+                    refreshLogs()
+                }
+            },
+            state = pullToRefreshState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Clear logs button
+                Button(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                FileTree.clearLogs()
+                                refreshLogs()
+                            } catch (e: Exception) {
+                                logs = listOf("Error clearing logs: ${e.message}")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Clear All Logs")
+                }
+
+                // Log content
+                SelectionContainer {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        if (logs.isEmpty() && !isRefreshing) {
+                            Text(
+                                text = "No logs available yet. Logs will appear here as the app runs.\n\n📱 Pull down to refresh and fetch new logs.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        } else if (logs.isNotEmpty()) {
+                            Text(
+                                text = logs.joinToString("\n\n"),
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 12.sp
+                                ),
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 }

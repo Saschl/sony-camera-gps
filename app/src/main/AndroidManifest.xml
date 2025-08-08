@@ -50,8 +50,6 @@
             android:name=".ui.LogViewerActivity"
             android:exported="false"
             android:label="Log Viewer"
-
-
             />
 
          <!--  Declare the foreground service type  -->
