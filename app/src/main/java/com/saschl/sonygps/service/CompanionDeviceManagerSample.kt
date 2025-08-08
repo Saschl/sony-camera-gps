@@ -427,7 +427,7 @@ private fun DevicesScreen(
                     scope.launch {
                         deviceManager.disassociate(it.id)
 
-                        deviceManager.stopObservingDevicePresence(it.address)
+                        deviceManager.stopObservingDevicePresence(ObservingDevicePresenceRequest.Builder().setAssociationId(it.id).build())
 
                         associatedDevices = deviceManager.getAssociatedDevices()
                     }
