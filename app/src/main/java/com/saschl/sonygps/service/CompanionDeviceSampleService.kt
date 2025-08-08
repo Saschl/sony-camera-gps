@@ -42,6 +42,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.IconCompat
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.saschl.sonygps.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import timber.log.Timber
 import java.util.Locale
@@ -109,7 +110,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
             val serviceIntent = Intent(this, LocationSenderService::class.java)
             serviceIntent.putExtra("address", address?.uppercase(Locale.getDefault()))
             Timber.i("WILL STRART THE FOREGROUND BITCH")
-            notificationManager.onDeviceAppeared("nah", "HERE I AM")
+            //notificationManager.onDeviceAppeared("nah", "HERE I AM")
             startForegroundService(serviceIntent)
         }
     }
@@ -126,7 +127,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         //fusedLocationClient.removeLocationUpdates(locationCallback)
 
         stopService(Intent(this, LocationSenderService::class.java))
-        notificationManager.onDeviceDisappeared("Service gone :)")
+      //  notificationManager.onDeviceDisappeared("Service gone :)")
 
         /*   gatt?.disconnect()
            gatt?.close()*/
@@ -175,7 +176,7 @@ class CompanionDeviceSampleService : CompanionDeviceService() {
         private val manager = NotificationManagerCompat.from(context)
 
         private val notificationBuilder = NotificationCompat.Builder(context, CDM_CHANNEL)
-            .setSmallIcon(IconCompat.createWithResource(context, context.applicationInfo.icon))
+            .setSmallIcon(R.drawable.ic_gps_fixed)
             .setContentTitle("Companion Device Manager Sample")
 
         init {

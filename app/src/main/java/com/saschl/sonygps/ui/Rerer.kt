@@ -7,8 +7,10 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.saschl.sonygps.service.FileTree
+import kotlinx.coroutines.launch
 
 class LogViewerActivity : ComponentActivity() {
     private lateinit var logTextView: TextView
@@ -34,8 +36,11 @@ class LogViewerActivity : ComponentActivity() {
         val clearButton = Button(this).apply {
             text = "Clear All Logs"
             setOnClickListener {
-                FileTree.clearLogs()
-                refreshLogs()
+                lifecycleScope.launch {
+                    FileTree.clearLogs()
+                    refreshLogs()
+                }
+
             }
         }
 

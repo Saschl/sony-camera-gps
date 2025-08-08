@@ -38,7 +38,7 @@ class FileTree(context: Context) : Timber.Tree() {
             } ?: emptyList()
         }
 
-        fun clearLogs() {
+        suspend fun clearLogs() {
             logRepository?.clearAllLogs()
         }
 

@@ -100,7 +100,7 @@ class LocationSenderService : Service() {
                 // GATT_INSUFFICIENT_AUTHENTICATION you should create a bond.
                 // https://developer.android.com/reference/android/bluetooth/BluetoothDevice#createBond()
 
-                Timber.e("BLEConnectEffect", "An error happened: $status")
+                Timber.e("An error happened: $status")
                 fusedLocationClient.removeLocationUpdates(locationCallback)
                 shutdownTimer = Timer()
                /* shutdownTimer.schedule(object : TimerTask() {
@@ -117,7 +117,7 @@ class LocationSenderService : Service() {
                 shutdownTimer.cancel()
                 shutdownTimer.purge()
 
-                Timber.i("BLEConnectEffect", "Connected to device")
+                Timber.i( "Connected to device")
                 gatt.discoverServices()
 
             }
@@ -214,14 +214,14 @@ class LocationSenderService : Service() {
            }*/
 
         device = bluetoothManager.adapter.getRemoteDevice(address)
-        Timber.i("ayup","ON START YEAH")
+        Timber.i("ON START YEAH")
 
 
         if (gatt1 != null) {
-            Timber.i("ayup", "Gatt will be reused")
+            Timber.i( "Gatt will be reused")
             //     gatt1?.connect()
         } else {
-            Timber.i("ayup", "Gatt will be created")
+            Timber.i("Gatt will be created")
 
             gatt1 = device?.connectGatt(this, true, callback)
         }
@@ -263,19 +263,16 @@ class LocationSenderService : Service() {
                     // new location is way less accurate, only take if the old location is very old
                     if ((lastLocation.accuracy - locationResultVar.accuracy) > 200) {
                         Timber.w(
-                            "LOCATION",
                             "New location is way less accurate than the old one, will only update if the last location is older than 5 minutes"
                         )
                         if (lastLocation.time - locationResultVar.time > 1000 * 60 * 5) {
                             Timber.d(
-                                "LOCATION",
                                 "Last accurate location is older than 5 minutes, updating anyway"
                             )
                             locationResultVar = lastLocation
                         }
                     } else {
                         Timber.w(
-                            "LOCATION",
                             "New location is more accurate than the old one, updating"
                         )
                         locationResultVar = lastLocation
@@ -357,7 +354,7 @@ class LocationSenderService : Service() {
            data[94] = offsetDstMinBytes[1]*/
 
         val hex = data.toHex()
-        Timber.i("ayup", "Sending data: $hex with location $locationResultVar")
+        Timber.i("Sending data: $hex with location $locationResultVar")
 
             if (characteristic != null) {
                 val result = gatt?.writeCharacteristic(
@@ -365,7 +362,7 @@ class LocationSenderService : Service() {
                     data,
                     BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT,
                 )
-                Timber.i("ayup", "Write result: $result")
+                Timber.i( "Write result: $result")
             }
     }
 }

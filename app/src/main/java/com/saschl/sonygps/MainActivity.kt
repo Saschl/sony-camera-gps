@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.saschl.sonygps.service.CompanionDeviceManagerSample
@@ -30,21 +31,25 @@ class MainActivity : ComponentActivity() {
             // if permission was denied, the service can still run only the notification won't be visible
         }
 
+
+
     // we need location permission to be able to start the service
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Handle the splash screen transition.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
 
         // Only plant Timber once in the app lifecycle
-        //if (Timber.treeCount == 0) {
+        if (Timber.treeCount == 0) {
             FileTree.initialize(this)
             Timber.plant(Timber.DebugTree(), FileTree(this))
 
             // Set up global exception handler to log crashes
             val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
             Thread.setDefaultUncaughtExceptionHandler(GlobalExceptionHandler(defaultHandler))
-      //  }
+        }
 
         Timber.i("onCreate called")
 
@@ -52,13 +57,7 @@ class MainActivity : ComponentActivity() {
         layout.orientation = LinearLayout.VERTICAL
         layout.setPadding(16, 16, 16, 16)
 
-        val logButton = Button(this).apply {
-            text = "View Logs"
-            setOnClickListener {
-                startActivity(Intent(this@MainActivity, com.saschl.sonygps.ui.LogViewerActivity::class.java))
-            }
-        }
-      //  layout.addView(logButton)
+
         val composeView = androidx.compose.ui.platform.ComposeView(this).apply {
             setContent {
                 ForegroundService14Theme {
@@ -69,14 +68,7 @@ class MainActivity : ComponentActivity() {
         layout.addView(composeView)
         setContentView(layout)
 
-        // Handle system bars to prevent button from appearing in status bar
-       /* ViewCompat.setOnApplyWindowInsetsListener(layout) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(16, systemBars.top + 16, 16, systemBars.bottom + 16)
-            insets
-        }*/
-
-        checkAndRequestNotificationPermission()
+        //checkAndRequestNotificationPermission()
 
     }
 

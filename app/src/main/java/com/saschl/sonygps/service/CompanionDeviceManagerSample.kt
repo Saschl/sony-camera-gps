@@ -82,6 +82,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.saschl.sonygps.service.CompanionDeviceSampleService.Companion.CHARACTERISTIC_UUID
 import com.saschl.sonygps.service.CompanionDeviceSampleService.Companion.SERVICE_UUID
+import com.saschl.sonygps.ui.EnhancedLocationPermissionBox
 import com.saschl.sonygps.ui.PermissionBox
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -107,32 +108,20 @@ fun CompanionDeviceManagerSample() {
         Text(text = "No Companion device manager found. The device does not support it.")
     } else {
         if (selectedDevice == null) {
-            PermissionBox(
-                permissions = listOf(
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
-            ) {
-
+            EnhancedLocationPermissionBox {
                 DevicesScreen(deviceManager) { device ->
                     selectedDevice =
                         (device.device ?: adapter.getRemoteDevice(device.address))
                 }
             }
         } else {
-            PermissionBox(
-                permissions = listOf(
-                    Manifest.permission.BLUETOOTH_CONNECT,
-                    Manifest.permission.ACCESS_FINE_LOCATION
-                )
-            ) {
+            EnhancedLocationPermissionBox {
                 ConnectDeviceScreen(device = selectedDevice!!) {
                     selectedDevice = null
                 }
-                }
-
             }
         }
+    }
 }
 
 
@@ -394,7 +383,6 @@ fun set_date(zoneId: ZoneId): ByteArray {
 }
 
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun DevicesScreen(
     deviceManager: CompanionDeviceManager,
@@ -428,7 +416,7 @@ private fun DevicesScreen(
             .padding(innerPadding),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Button(onClick = { context.startActivity(Intent(context, com.saschl.sonygps.ui.LogViewerActivity::class.java))}) { Text(text = "Request Location") }
+            Button(onClick = { context.startActivity(Intent(context, com.saschl.sonygps.ui.LogViewerActivity::class.java))}) { Text(text = "View logs") }
             ScanForDevicesMenu(deviceManager) {
                 associatedDevices = associatedDevices + it
             }

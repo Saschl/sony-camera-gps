@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("kotlin-kapt")
+    id("com.google.devtools.ksp")
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -73,9 +74,10 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.material)
+    implementation(libs.androidx.core.splashscreen)
 
     // Room database dependencies
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    kapt(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
 }

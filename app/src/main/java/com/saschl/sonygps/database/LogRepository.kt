@@ -34,7 +34,7 @@ class LogRepository(context: Context) {
 
     suspend fun getRecentLogs(limit: Int = 200): List<LogEntry> = logDao.getRecentLogs(limit)
 
-    fun clearAllLogs() {
-        runBlocking { logDao.clearAllLogs() }
+    suspend fun clearAllLogs() {
+        logDao.clearAllLogs()
     }
 }
